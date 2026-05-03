@@ -423,6 +423,16 @@ function Index() {
         cursor: locked ? "none" : "default",
       }}
     >
+      {/* L1 full-screen color wash */}
+      {flash && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(circle, oklch(0.7 0.2 ${flash.hue} / 0.45), transparent 70%)`,
+            animation: "flashWash 320ms ease-out forwards",
+          }}
+        />
+      )}
       {/* twinkle stars */}
       <div className="pointer-events-none absolute inset-0 opacity-40">
         {Array.from({ length: 30 }).map((_, i) => (
