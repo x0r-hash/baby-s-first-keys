@@ -81,6 +81,7 @@ function Index() {
 
   const saveLevel = (l: Level) => {
     setLevel(l);
+    setMelody([]);
     localStorage.setItem(LEVEL_KEY, String(l));
   };
 
