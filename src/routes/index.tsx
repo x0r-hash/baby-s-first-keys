@@ -58,6 +58,8 @@ function Index() {
   const [mathQ, setMathQ] = useState({ a: 0, b: 0 });
   const [mathAns, setMathAns] = useState("");
   const [mathErr, setMathErr] = useState(false);
+  const [flash, setFlash] = useState<{ id: number; hue: number } | null>(null);
+  const [melody, setMelody] = useState<string[]>([]);
 
   const idRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
