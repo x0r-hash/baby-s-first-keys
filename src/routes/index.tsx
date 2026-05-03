@@ -157,6 +157,20 @@ function Index() {
       osc.connect(gain).connect(ctx.destination);
       osc.start(now);
       osc.stop(now + dur + 0.05);
+
+      // Level 5 — soft chord (perfect fifth) for richer musical feel
+      if (lvl === 5) {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(freq * 1.5, now);
+        gain2.gain.setValueAtTime(0, now);
+        gain2.gain.linearRampToValueAtTime(vol * 0.6, now + 0.01);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        osc2.connect(gain2).connect(ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + dur + 0.05);
+      }
     },
     [ensureAudio]
   );
