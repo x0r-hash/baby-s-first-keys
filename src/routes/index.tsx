@@ -44,6 +44,7 @@ const FRIENDLY_HUES = [10, 30, 50, 130, 180, 200, 270, 320];
 const SHAPES: Burst["shape"][] = ["circle", "star", "bubble", "ring"];
 const PENTATONIC = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
 const FUN_FREQS = [180, 240, 320]; // boop sounds
+const SURPRISE_EMOJI = ["🐶", "🐱", "🌟", "🌈", "🎈", "🍎", "🦄", "🐝", "🌸", "🐳", "🦋", "🍓"];
 
 const LEVEL_KEY = "babykeys.level";
 
@@ -57,6 +58,8 @@ function Index() {
   const [mathQ, setMathQ] = useState({ a: 0, b: 0 });
   const [mathAns, setMathAns] = useState("");
   const [mathErr, setMathErr] = useState(false);
+  const [flash, setFlash] = useState<{ id: number; hue: number } | null>(null);
+  const [melody, setMelody] = useState<string[]>([]);
 
   const idRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -78,6 +81,7 @@ function Index() {
 
   const saveLevel = (l: Level) => {
     setLevel(l);
+    setMelody([]);
     localStorage.setItem(LEVEL_KEY, String(l));
   };
 
@@ -154,6 +158,20 @@ function Index() {
       osc.connect(gain).connect(ctx.destination);
       osc.start(now);
       osc.stop(now + dur + 0.05);
+
+      // Level 5 — soft chord (perfect fifth) for richer musical feel
+      if (lvl === 5) {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(freq * 1.5, now);
+        gain2.gain.setValueAtTime(0, now);
+        gain2.gain.linearRampToValueAtTime(vol * 0.6, now + 0.01);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        osc2.connect(gain2).connect(ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + dur + 0.05);
+      }
     },
     [ensureAudio]
   );
@@ -182,36 +200,53 @@ function Index() {
       let particleCount = 0;
       let maxBursts = 1;
 
+      let displayChar = upper;
+
       if (lvl === 1) {
         // identical-style response, single big blob, replaces previous
+        // FEATURE: full-screen soft color wash flash on every press
         hue = FRIENDLY_HUES[Math.floor(Math.random() * FRIENDLY_HUES.length)];
         shape = "circle";
         size = 1.4;
         maxBursts = 0; // replace
+        setFlash({ id, hue });
+        setTimeout(() => setFlash((f) => (f && f.id === id ? null : f)), 320);
       } else if (lvl === 2) {
         // random color/size, 1-2 elements, simple
+        // FEATURE: surprise friendly emoji ~30% of the time
         hue = FRIENDLY_HUES[Math.floor(Math.random() * FRIENDLY_HUES.length)];
         shape = "circle";
         size = 0.7 + Math.random() * 0.9;
-        maxBursts = 1; // keep last 2
+        maxBursts = 1;
+        if (Math.random() < 0.3) {
+          displayChar = SURPRISE_EMOJI[Math.floor(Math.random() * SURPRISE_EMOJI.length)];
+          showLetter = true;
+        }
       } else if (lvl === 3) {
         // consistent per key — hash key to hue/shape
+        // FEATURE: ALWAYS show pressed letter/number for early recognition
         const keySum = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
         hue = FRIENDLY_HUES[keySum % FRIENDLY_HUES.length];
         shape = SHAPES[keySum % SHAPES.length];
         size = 1;
-        showLetter = isLetter && Math.random() > 0.6;
-        maxBursts = 2; // up to 3 onscreen
+        showLetter = isLetter || isDigit;
+        maxBursts = 2;
       } else if (lvl === 4) {
         // letters → shapes, numbers → sound emphasis; repetition grows
+        // FEATURE: streak fireworks — 3+ same-key presses trigger a big bloom + show char
         const keySum = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
         hue = FRIENDLY_HUES[keySum % FRIENDLY_HUES.length];
         shape = isDigit ? "ring" : SHAPES[keySum % SHAPES.length];
         size = Math.min(0.8 + repCount * 0.15, 2);
         particleCount = Math.min(8 + repCount * 4, 30);
         maxBursts = 4;
+        if (repCount >= 3) {
+          particleCount = 50;
+          showLetter = isLetter || isDigit;
+        }
       } else {
         // level 5 — rich, persistent, letter+note pairing
+        // FEATURE: melody trail HUD records last pressed keys
         const keySum = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
         hue = FRIENDLY_HUES[keySum % FRIENDLY_HUES.length];
         shape = SHAPES[keySum % SHAPES.length];
@@ -219,6 +254,9 @@ function Index() {
         showLetter = isLetter || isDigit;
         particleCount = 18;
         maxBursts = 7;
+        if (isLetter || isDigit) {
+          setMelody((m) => [...m.slice(-11), upper]);
+        }
       }
 
       const x = 10 + Math.random() * 80;
@@ -226,7 +264,7 @@ function Index() {
       setBgHue(hue);
 
       setBursts((b) => {
-        const next = [...b.slice(-maxBursts), { id, x, y, char: upper, hue, shape, size, showLetter }];
+        const next = [...b.slice(-maxBursts), { id, x, y, char: displayChar, hue, shape, size, showLetter }];
         return next;
       });
 
@@ -385,6 +423,16 @@ function Index() {
         cursor: locked ? "none" : "default",
       }}
     >
+      {/* L1 full-screen color wash */}
+      {flash && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(circle, oklch(0.7 0.2 ${flash.hue} / 0.45), transparent 70%)`,
+            animation: "flashWash 320ms ease-out forwards",
+          }}
+        />
+      )}
       {/* twinkle stars */}
       <div className="pointer-events-none absolute inset-0 opacity-40">
         {Array.from({ length: 30 }).map((_, i) => (
@@ -559,6 +607,29 @@ function Index() {
           L{level} {current.emoji}
         </div>
       )}
+
+      {/* L5 melody trail HUD */}
+      {locked && !showExit && level === 5 && melody.length > 0 && (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-4 py-2 rounded-full bg-foreground/10 backdrop-blur-sm">
+          {melody.map((c, i) => (
+            <span
+              key={i}
+              className="text-foreground/80 font-bold text-base"
+              style={{ opacity: 0.4 + (i / melody.length) * 0.6 }}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes flashWash {
+          0% { opacity: 0; }
+          30% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
     </main>
   );
 }
