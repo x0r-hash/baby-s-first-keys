@@ -263,7 +263,7 @@ function Index() {
       setBgHue(hue);
 
       setBursts((b) => {
-        const next = [...b.slice(-maxBursts), { id, x, y, char: upper, hue, shape, size, showLetter }];
+        const next = [...b.slice(-maxBursts), { id, x, y, char: displayChar, hue, shape, size, showLetter }];
         return next;
       });
 
