@@ -199,36 +199,53 @@ function Index() {
       let particleCount = 0;
       let maxBursts = 1;
 
+      let displayChar = upper;
+
       if (lvl === 1) {
         // identical-style response, single big blob, replaces previous
+        // FEATURE: full-screen soft color wash flash on every press
         hue = FRIENDLY_HUES[Math.floor(Math.random() * FRIENDLY_HUES.length)];
         shape = "circle";
         size = 1.4;
         maxBursts = 0; // replace
+        setFlash({ id, hue });
+        setTimeout(() => setFlash((f) => (f && f.id === id ? null : f)), 320);
       } else if (lvl === 2) {
         // random color/size, 1-2 elements, simple
+        // FEATURE: surprise friendly emoji ~30% of the time
         hue = FRIENDLY_HUES[Math.floor(Math.random() * FRIENDLY_HUES.length)];
         shape = "circle";
         size = 0.7 + Math.random() * 0.9;
-        maxBursts = 1; // keep last 2
+        maxBursts = 1;
+        if (Math.random() < 0.3) {
+          displayChar = SURPRISE_EMOJI[Math.floor(Math.random() * SURPRISE_EMOJI.length)];
+          showLetter = true;
+        }
       } else if (lvl === 3) {
         // consistent per key — hash key to hue/shape
+        // FEATURE: ALWAYS show pressed letter/number for early recognition
         const keySum = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
         hue = FRIENDLY_HUES[keySum % FRIENDLY_HUES.length];
         shape = SHAPES[keySum % SHAPES.length];
         size = 1;
-        showLetter = isLetter && Math.random() > 0.6;
-        maxBursts = 2; // up to 3 onscreen
+        showLetter = isLetter || isDigit;
+        maxBursts = 2;
       } else if (lvl === 4) {
         // letters → shapes, numbers → sound emphasis; repetition grows
+        // FEATURE: streak fireworks — 3+ same-key presses trigger a big bloom + show char
         const keySum = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
         hue = FRIENDLY_HUES[keySum % FRIENDLY_HUES.length];
         shape = isDigit ? "ring" : SHAPES[keySum % SHAPES.length];
         size = Math.min(0.8 + repCount * 0.15, 2);
         particleCount = Math.min(8 + repCount * 4, 30);
         maxBursts = 4;
+        if (repCount >= 3) {
+          particleCount = 50;
+          showLetter = isLetter || isDigit;
+        }
       } else {
         // level 5 — rich, persistent, letter+note pairing
+        // FEATURE: melody trail HUD records last pressed keys
         const keySum = key.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
         hue = FRIENDLY_HUES[keySum % FRIENDLY_HUES.length];
         shape = SHAPES[keySum % SHAPES.length];
@@ -236,6 +253,9 @@ function Index() {
         showLetter = isLetter || isDigit;
         particleCount = 18;
         maxBursts = 7;
+        if (isLetter || isDigit) {
+          setMelody((m) => [...m.slice(-11), upper]);
+        }
       }
 
       const x = 10 + Math.random() * 80;
