@@ -607,6 +607,29 @@ function Index() {
           L{level} {current.emoji}
         </div>
       )}
+
+      {/* L5 melody trail HUD */}
+      {locked && !showExit && level === 5 && melody.length > 0 && (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 px-4 py-2 rounded-full bg-foreground/10 backdrop-blur-sm">
+          {melody.map((c, i) => (
+            <span
+              key={i}
+              className="text-foreground/80 font-bold text-base"
+              style={{ opacity: 0.4 + (i / melody.length) * 0.6 }}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes flashWash {
+          0% { opacity: 0; }
+          30% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
     </main>
   );
 }
