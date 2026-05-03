@@ -44,6 +44,7 @@ const FRIENDLY_HUES = [10, 30, 50, 130, 180, 200, 270, 320];
 const SHAPES: Burst["shape"][] = ["circle", "star", "bubble", "ring"];
 const PENTATONIC = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
 const FUN_FREQS = [180, 240, 320]; // boop sounds
+const SURPRISE_EMOJI = ["🐶", "🐱", "🌟", "🌈", "🎈", "🍎", "🦄", "🐝", "🌸", "🐳", "🦋", "🍓"];
 
 const LEVEL_KEY = "babykeys.level";
 
