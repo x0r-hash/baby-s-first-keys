@@ -345,6 +345,9 @@ function Index() {
         return;
       }
 
+      // If exit modal is open or not locked, let the input/browser handle keys normally
+      if (showExit || !locked) return;
+
       if (
         (e.ctrlKey || e.metaKey) &&
         ["t", "w", "n", "r", "p", "s", "f", "l", "j", "h"].includes(e.key.toLowerCase())
@@ -353,8 +356,6 @@ function Index() {
       }
       if (e.key === "F5" || (e.key === "Tab" && e.altKey)) e.preventDefault();
       if (e.key === "Backspace" || e.key === "Escape") e.preventDefault();
-
-      if (showExit || !locked) return;
 
       e.preventDefault();
       if (e.repeat) return; // we handle continuous via held map for level 5
