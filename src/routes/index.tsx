@@ -375,11 +375,11 @@ function Index() {
         heldKeysRef.current.set(e.key, Date.now());
       }
 
-      triggerKey(e.key);
+      ensureAudio();
+      playSound(e.key, level);
+      spawnBurst(e.key, level);
+      pushTape(e.key);
     };
-
-    const triggerKeyRef = triggerKey;
-    void triggerKeyRef;
 
     const upHandler = (e: KeyboardEvent) => {
       heldKeysRef.current.delete(e.key);
