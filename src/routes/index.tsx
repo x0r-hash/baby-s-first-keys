@@ -810,3 +810,67 @@ function BurstFx({ burst }: { burst: Burst }) {
     </>
   );
 }
+
+const VK_ROWS = [
+  ["1","2","3","4","5","6","7","8","9","0"],
+  ["Q","W","E","R","T","Y","U","I","O","P"],
+  ["A","S","D","F","G","H","J","K","L"],
+  ["Z","X","C","V","B","N","M"],
+];
+
+function VirtualKeyboard({
+  activeKey,
+  onKey,
+  hue,
+}: {
+  activeKey: string | null;
+  onKey: (key: string) => void;
+  hue: number;
+}) {
+  return (
+    <div
+      className="absolute bottom-0 left-0 right-0 px-1 pb-2 pt-2 backdrop-blur-md"
+      style={{ background: `linear-gradient(to top, oklch(0.15 0.06 ${hue} / 0.85), transparent)` }}
+    >
+      {VK_ROWS.map((row, ri) => (
+        <div key={ri} className="flex justify-center gap-1 mb-1">
+          {row.map((k) => {
+            const isActive = activeKey?.toUpperCase() === k;
+            return (
+              <button
+                key={k}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  onKey(k);
+                }}
+                className="flex-1 max-w-[2.5rem] sm:max-w-[3rem] aspect-square rounded-xl font-black text-base sm:text-xl text-foreground shadow-lg active:scale-90 transition-transform"
+                style={{
+                  background: isActive
+                    ? `oklch(0.75 0.25 ${hue})`
+                    : `oklch(0.35 0.08 ${hue})`,
+                  boxShadow: isActive
+                    ? `0 0 20px oklch(0.7 0.3 ${hue})`
+                    : "0 2px 6px rgba(0,0,0,0.4)",
+                }}
+              >
+                {k}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+      <div className="flex justify-center gap-1">
+        <button
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onKey(" ");
+          }}
+          className="flex-1 max-w-[16rem] h-10 rounded-xl font-bold text-foreground/80 shadow-lg active:scale-95 transition-transform"
+          style={{ background: `oklch(0.35 0.08 ${hue})` }}
+        >
+          ␣ space
+        </button>
+      </div>
+    </div>
+  );
+}
