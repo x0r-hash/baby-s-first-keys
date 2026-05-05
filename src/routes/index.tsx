@@ -61,6 +61,9 @@ function Index() {
   const [flash, setFlash] = useState<{ id: number; hue: number } | null>(null);
   const [melody, setMelody] = useState<string[]>([]);
 
+  const [isTouch, setIsTouch] = useState(false);
+  const [tapeActive, setTapeActive] = useState<string | null>(null);
+
   const idRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastKeyRef = useRef<{ key: string; count: number; time: number }>({
