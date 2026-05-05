@@ -679,6 +679,9 @@ function Index() {
       {locked && !showExit && isTouch && (
         <VirtualKeyboard activeKey={tapeActive} onKey={tapKey} hue={current.hue} />
       )}
+
+      <style>{`
+        @keyframes flashWash {
           0% { opacity: 0; }
           30% { opacity: 1; }
           100% { opacity: 0; }
