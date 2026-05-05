@@ -656,8 +656,29 @@ function Index() {
         </div>
       )}
 
-      <style>{`
-        @keyframes flashWash {
+      {/* Display tape — recent key history (top of screen) */}
+      {locked && !showExit && tapeKeys.length > 0 && (
+        <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 flex gap-1 px-3 py-2 rounded-full bg-foreground/10 backdrop-blur-sm max-w-[90vw] overflow-hidden">
+          {tapeKeys.map((t, i) => (
+            <span
+              key={t.id}
+              className="font-black text-lg md:text-xl px-1.5 rounded"
+              style={{
+                color: `oklch(0.9 0.2 ${t.hue})`,
+                textShadow: `0 0 8px oklch(0.7 0.25 ${t.hue})`,
+                opacity: 0.3 + (i / tapeKeys.length) * 0.7,
+              }}
+            >
+              {t.char}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Virtual keyboard — touch devices */}
+      {locked && !showExit && isTouch && (
+        <VirtualKeyboard activeKey={tapeActive} onKey={tapKey} hue={current.hue} />
+      )}
           0% { opacity: 0; }
           30% { opacity: 1; }
           100% { opacity: 0; }
