@@ -61,6 +61,9 @@ function Index() {
   const [flash, setFlash] = useState<{ id: number; hue: number } | null>(null);
   const [melody, setMelody] = useState<string[]>([]);
 
+  const [isTouch, setIsTouch] = useState(false);
+  const [tapeActive, setTapeActive] = useState<string | null>(null);
+
   const idRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastKeyRef = useRef<{ key: string; count: number; time: number }>({
@@ -77,13 +80,30 @@ function Index() {
       const n = parseInt(saved, 10) as Level;
       if (n >= 1 && n <= 5) setLevel(n);
     }
+    // Detect touch device
+    const touch =
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.matchMedia("(pointer: coarse)").matches;
+    setIsTouch(touch);
   }, []);
+
+  const [tapeKeys, setTapeKeys] = useState<{ id: number; char: string; hue: number }[]>([]);
 
   const saveLevel = (l: Level) => {
     setLevel(l);
     setMelody([]);
     localStorage.setItem(LEVEL_KEY, String(l));
   };
+
+  const pushTape = useCallback((key: string) => {
+    const upper = key.length === 1 ? key.toUpperCase() : key === " " ? "␣" : key === "Enter" ? "⏎" : key;
+    const hue = FRIENDLY_HUES[Math.floor(Math.random() * FRIENDLY_HUES.length)];
+    const tid = Date.now() + Math.random();
+    setTapeKeys((t) => [...t.slice(-19), { id: tid, char: upper, hue }]);
+    setTapeActive(key);
+    setTimeout(() => setTapeActive((k) => (k === key ? null : k)), 200);
+  }, []);
 
   const ensureAudio = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -367,6 +387,7 @@ function Index() {
       ensureAudio();
       playSound(e.key, level);
       spawnBurst(e.key, level);
+      pushTape(e.key);
     };
 
     const upHandler = (e: KeyboardEvent) => {
@@ -400,6 +421,17 @@ function Index() {
     }
     setLocked(true);
   }, [ensureAudio]);
+
+  const tapKey = useCallback(
+    (key: string) => {
+      if (!locked || showExit) return;
+      ensureAudio();
+      playSound(key, level);
+      spawnBurst(key, level);
+      pushTape(key);
+    },
+    [locked, showExit, ensureAudio, playSound, spawnBurst, pushTape, level]
+  );
 
   const confirmExit = () => {
     if (parseInt(mathAns, 10) === mathQ.a + mathQ.b) {
@@ -624,6 +656,30 @@ function Index() {
         </div>
       )}
 
+      {/* Display tape — recent key history (top of screen) */}
+      {locked && !showExit && tapeKeys.length > 0 && (
+        <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 flex gap-1 px-3 py-2 rounded-full bg-foreground/10 backdrop-blur-sm max-w-[90vw] overflow-hidden">
+          {tapeKeys.map((t, i) => (
+            <span
+              key={t.id}
+              className="font-black text-lg md:text-xl px-1.5 rounded"
+              style={{
+                color: `oklch(0.9 0.2 ${t.hue})`,
+                textShadow: `0 0 8px oklch(0.7 0.25 ${t.hue})`,
+                opacity: 0.3 + (i / tapeKeys.length) * 0.7,
+              }}
+            >
+              {t.char}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Virtual keyboard — touch devices */}
+      {locked && !showExit && isTouch && (
+        <VirtualKeyboard activeKey={tapeActive} onKey={tapKey} hue={current.hue} />
+      )}
+
       <style>{`
         @keyframes flashWash {
           0% { opacity: 0; }
@@ -752,5 +808,69 @@ function BurstFx({ burst }: { burst: Burst }) {
         }
       `}</style>
     </>
+  );
+}
+
+const VK_ROWS = [
+  ["1","2","3","4","5","6","7","8","9","0"],
+  ["Q","W","E","R","T","Y","U","I","O","P"],
+  ["A","S","D","F","G","H","J","K","L"],
+  ["Z","X","C","V","B","N","M"],
+];
+
+function VirtualKeyboard({
+  activeKey,
+  onKey,
+  hue,
+}: {
+  activeKey: string | null;
+  onKey: (key: string) => void;
+  hue: number;
+}) {
+  return (
+    <div
+      className="absolute bottom-0 left-0 right-0 px-1 pb-2 pt-2 backdrop-blur-md"
+      style={{ background: `linear-gradient(to top, oklch(0.15 0.06 ${hue} / 0.85), transparent)` }}
+    >
+      {VK_ROWS.map((row, ri) => (
+        <div key={ri} className="flex justify-center gap-1 mb-1">
+          {row.map((k) => {
+            const isActive = activeKey?.toUpperCase() === k;
+            return (
+              <button
+                key={k}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  onKey(k);
+                }}
+                className="flex-1 max-w-[2.5rem] sm:max-w-[3rem] aspect-square rounded-xl font-black text-base sm:text-xl text-foreground shadow-lg active:scale-90 transition-transform"
+                style={{
+                  background: isActive
+                    ? `oklch(0.75 0.25 ${hue})`
+                    : `oklch(0.35 0.08 ${hue})`,
+                  boxShadow: isActive
+                    ? `0 0 20px oklch(0.7 0.3 ${hue})`
+                    : "0 2px 6px rgba(0,0,0,0.4)",
+                }}
+              >
+                {k}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+      <div className="flex justify-center gap-1">
+        <button
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onKey(" ");
+          }}
+          className="flex-1 max-w-[16rem] h-10 rounded-xl font-bold text-foreground/80 shadow-lg active:scale-95 transition-transform"
+          style={{ background: `oklch(0.35 0.08 ${hue})` }}
+        >
+          ␣ space
+        </button>
+      </div>
+    </div>
   );
 }
