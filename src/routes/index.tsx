@@ -422,6 +422,17 @@ function Index() {
     setLocked(true);
   }, [ensureAudio]);
 
+  const tapKey = useCallback(
+    (key: string) => {
+      if (!locked || showExit) return;
+      ensureAudio();
+      playSound(key, level);
+      spawnBurst(key, level);
+      pushTape(key);
+    },
+    [locked, showExit, ensureAudio, playSound, spawnBurst, pushTape, level]
+  );
+
   const confirmExit = () => {
     if (parseInt(mathAns, 10) === mathQ.a + mathQ.b) {
       setShowExit(false);
