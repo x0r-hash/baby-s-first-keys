@@ -80,7 +80,31 @@ function Index() {
       const n = parseInt(saved, 10) as Level;
       if (n >= 1 && n <= 5) setLevel(n);
     }
+    // Detect touch device
+    const touch =
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.matchMedia("(pointer: coarse)").matches;
+    setIsTouch(touch);
   }, []);
+
+  const [tapeKeys, setTapeKeys] = useState<{ id: number; char: string; hue: number }[]>([]);
+
+  const handlePress = useCallback(
+    (key: string) => {
+      ensureAudio();
+      playSound(key, level);
+      spawnBurst(key, level);
+      const upper = key.length === 1 ? key.toUpperCase() : key === " " ? "␣" : key;
+      const hue = FRIENDLY_HUES[Math.floor(Math.random() * FRIENDLY_HUES.length)];
+      const tid = ++idRef.current;
+      setTapeKeys((t) => [...t.slice(-19), { id: tid, char: upper, hue }]);
+      setTapeActive(key);
+      setTimeout(() => setTapeActive((k) => (k === key ? null : k)), 180);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [level]
+  );
 
   const saveLevel = (l: Level) => {
     setLevel(l);
