@@ -96,6 +96,15 @@ function Index() {
     localStorage.setItem(LEVEL_KEY, String(l));
   };
 
+  const pushTape = useCallback((key: string) => {
+    const upper = key.length === 1 ? key.toUpperCase() : key === " " ? "␣" : key === "Enter" ? "⏎" : key;
+    const hue = FRIENDLY_HUES[Math.floor(Math.random() * FRIENDLY_HUES.length)];
+    const tid = Date.now() + Math.random();
+    setTapeKeys((t) => [...t.slice(-19), { id: tid, char: upper, hue }]);
+    setTapeActive(key);
+    setTimeout(() => setTapeActive((k) => (k === key ? null : k)), 200);
+  }, []);
+
   const ensureAudio = useCallback(() => {
     if (!audioCtxRef.current) {
       const Ctx =
